@@ -19,14 +19,14 @@ export default function Home() {
 					<div className="mt-8 mb-4">
 						<button
 							className={`px-4 py-2 rounded-l-md ${
-								selectedStablecoin === 'mkUSD' ? 'bg-blue-500 text-white' : 'bg-gray-200'
+								selectedStablecoin === 'mkUSD' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black'
 							}`}
 							onClick={() => setSelectedStablecoin('mkUSD')}>
 							mkUSD
 						</button>
 						<button
 							className={`px-4 py-2 rounded-r-md ${
-								selectedStablecoin === 'ULTRA' ? 'bg-blue-500 text-white' : 'bg-gray-200'
+								selectedStablecoin === 'ULTRA' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black'
 							}`}
 							onClick={() => setSelectedStablecoin('ULTRA')}>
 							ULTRA

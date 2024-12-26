@@ -101,7 +101,7 @@ export default function PSMComponent({stablecoin}: {stablecoin: 'mkUSD' | 'ULTRA
 					value={sellAmount}
 					onChange={e => setSellAmount(e.target.value)}
 					placeholder={`Amount of ${stablecoin} to sell`}
-					className="p-2 border rounded"
+					className="p-2 border rounded text-black"
 				/>
 				<button
 					onClick={() => sellDebtToken?.()}
