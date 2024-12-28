@@ -1,13 +1,20 @@
-import WagmiContextProvider from '@/components/providers';
+import {Inter} from 'next/font/google';
+
+import type {ReactNode} from 'react';
+
 import '@/app/globals.css';
 
-export default async function RootLayout({children}: {children: React.ReactNode}) {
+import WagmiContextProvider from '@/components/providers';
+
+const inter = Inter({subsets: ['latin']});
+
+export default async function RootLayout({children}: {children: ReactNode}): Promise<ReactNode> {
 	return (
 		<html
-			lang="en"
-			className="dark"
+			lang={'en'}
+			className={'dark'}
 			suppressHydrationWarning>
-			<body>
+			<body className={`${inter.className} min-h-screen bg-[#0E0E0E] text-white`}>
 				<WagmiContextProvider>{children}</WagmiContextProvider>
 			</body>
 		</html>

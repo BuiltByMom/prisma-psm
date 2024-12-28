@@ -1,14 +1,15 @@
 'use client';
 
-import {http} from '@wagmi/core';
-import {cookieStorage, createConfig, createStorage} from 'wagmi';
-import {WagmiAdapter} from '@reown/appkit-adapter-wagmi';
-import {Chain, mainnet} from 'wagmi/chains';
+import {type ReactNode, useState} from 'react';
 import {ConnectKitProvider} from 'connectkit';
-
+import {cookieStorage, createConfig, createStorage} from 'wagmi';
+import {type Config, WagmiProvider} from 'wagmi';
+import {mainnet} from 'wagmi/chains';
+import {WagmiAdapter} from '@reown/appkit-adapter-wagmi';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {useState, type ReactNode} from 'react';
-import {WagmiProvider, type Config} from 'wagmi';
+import {http} from '@wagmi/core';
+
+import type {Chain} from 'wagmi/chains';
 
 const tenderlyFork = {
 	...mainnet,
@@ -33,7 +34,6 @@ export const defaultNetwork = tenderlyFork;
 export const networks: [Chain, ...Chain[]] = [tenderlyFork];
 
 // 3. Transports
-// TODO: Add BNS to berachain testnet when https://github.com/wevm/viem/pull/3101 is merged
 const transports = {
 	[tenderlyFork.id]: http()
 };
@@ -60,11 +60,11 @@ export const wagmiAdapter = new WagmiAdapter({
 	networks
 });
 
-interface WagmiProviderProps {
+type TWagmiProviderProps = {
 	children: ReactNode;
-}
+};
 
-function WagmiContextProvider({children}: WagmiProviderProps) {
+function WagmiContextProvider({children}: TWagmiProviderProps): ReactNode {
 	const [config] = useState(wagmiAdapter.wagmiConfig as Config);
 	const [queryClient] = useState(() => new QueryClient());
 
@@ -76,5 +76,4 @@ function WagmiContextProvider({children}: WagmiProviderProps) {
 		</WagmiProvider>
 	);
 }
-
 export default WagmiContextProvider;
