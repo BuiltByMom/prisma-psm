@@ -103,6 +103,10 @@ const PSM_ABI = [
 
 const EXPLORER_URL = 'https://etherscan.io/address/';
 
+const MAX_UINT256 = BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff');
+
+const DEBT_BUFFER_BPS = 50; // 0.5% = 50 basis points
+
 type TDebtRepaymentCardProps = {
 	stablecoin: 'mkUSD' | 'ULTRA';
 };
@@ -177,6 +181,8 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 		query: {enabled: !!collateralTokenAddress}
 	});
 
+	const [, debt] = (troveData || [BigInt(0), BigInt(0)]) as [bigint, bigint];
+
 	useEffect(() => {
 		if (activeTroveManagers) {
 			set_troveManagers(activeTroveManagers as Address[]);
@@ -189,6 +195,15 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 	useEffect(() => {
 		set_isApproved(!!isDelegateApproved);
 	}, [isDelegateApproved]);
+
+	// Helper function to check if amount is approximately equal to debt (within buffer)
+	const isApproximatelyDebt = useCallback(
+		(inputAmount: bigint) => {
+			const buffer = (debt * BigInt(DEBT_BUFFER_BPS)) / BigInt(10000); // Convert BPS to percentage
+			return inputAmount >= debt - buffer && inputAmount <= debt + buffer;
+		},
+		[debt]
+	);
 
 	const handleApprove = useCallback(async () => {
 		if (!borrowerOpsAddress) {
@@ -218,6 +233,9 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 			await switchChainAsync({chainId: CHAIN_ID});
 		}
 
+		// Use MAX_UINT256 if amount is approximately equal to debt
+		const repayAmount = isApproximatelyDebt(parseEther(amount)) ? MAX_UINT256 : parseEther(amount);
+
 		await writeContractAsync({
 			address: ADDRESSES[stablecoin].psm,
 			abi: PSM_ABI,
@@ -226,14 +244,21 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 			args: [
 				selectedTrove,
 				address,
-				parseEther(amount),
+				repayAmount,
 				'0x0000000000000000000000000000000000000000',
 				'0x0000000000000000000000000000000000000000'
 			]
 		});
-	}, [address, amount, chain?.id, selectedTrove, stablecoin, switchChainAsync, writeContractAsync]);
-
-	const [, debt] = (troveData || [BigInt(0), BigInt(0)]) as [bigint, bigint];
+	}, [
+		address,
+		amount,
+		chain?.id,
+		isApproximatelyDebt,
+		selectedTrove,
+		stablecoin,
+		switchChainAsync,
+		writeContractAsync
+	]);
 
 	if (isLoadingTroves) {
 		return (
@@ -386,7 +411,7 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 							disabled={
 								isLoadingDebt ||
 								!amount ||
-								parseEther(amount) > debt ||
+								(parseEther(amount) > debt && !isApproximatelyDebt(parseEther(amount))) ||
 								!isApproved ||
 								debt === BigInt(0)
 							}>

@@ -14,8 +14,14 @@ import {formatNumber} from '@/lib/utils';
 
 const PSM_ABI = [
 	{
-		inputs: [{internalType: 'uint256', name: 'amount', type: 'uint256'}],
-		name: 'buyCrvUSD',
+		inputs: [
+			{
+				internalType: 'uint256',
+				name: 'amount',
+				type: 'uint256'
+			}
+		],
+		name: 'sellDebtToken',
 		outputs: [],
 		stateMutability: 'nonpayable',
 		type: 'function'
@@ -78,7 +84,7 @@ export default function BuyCrvUSDCard({stablecoin}: TBuyCrvUSDCardProps): ReactN
 			address: ADDRESSES[stablecoin].psm,
 			abi: PSM_ABI,
 			chainId: CHAIN_ID,
-			functionName: 'buyCrvUSD',
+			functionName: 'sellDebtToken',
 			args: [parseEther(buyAmount)]
 		});
 	}, [buyAmount, chain?.id, stablecoin, switchChainAsync, writeContractAsync]);
