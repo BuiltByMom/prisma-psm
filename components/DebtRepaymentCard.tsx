@@ -3,7 +3,7 @@
 import {useCallback, useEffect, useState} from 'react';
 import Link from 'next/link';
 import {erc20Abi, formatEther, parseEther} from 'viem';
-import {useAccount, useReadContract, useWriteContract} from 'wagmi';
+import {useAccount, useReadContract, useSwitchChain, useWriteContract} from 'wagmi';
 
 import type {ReactNode} from 'react';
 import type {Address} from 'viem';
@@ -114,7 +114,8 @@ type TDebtRepaymentCardProps = {
  ************************************************************************************************/
 export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps): ReactNode {
 	const {address} = useAccount();
-	const {writeContract} = useWriteContract();
+	const {writeContractAsync} = useWriteContract();
+	const {switchChainAsync, data: chain} = useSwitchChain();
 	const [amount, set_amount] = useState('');
 	const [troveManagers, set_troveManagers] = useState<Address[]>([]);
 	const [selectedTrove, set_selectedTrove] = useState<Address | null>(null);
@@ -194,7 +195,11 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 			return;
 		}
 
-		await writeContract({
+		if (chain?.id !== CHAIN_ID) {
+			await switchChainAsync({chainId: CHAIN_ID});
+		}
+
+		await writeContractAsync({
 			address: borrowerOpsAddress,
 			abi: BORROWER_OPS_ABI,
 			chainId: CHAIN_ID,
@@ -202,14 +207,18 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 			args: [ADDRESSES[stablecoin].psm, true]
 		});
 		set_isApproved(true);
-	}, [borrowerOpsAddress, stablecoin, writeContract]);
+	}, [borrowerOpsAddress, chain?.id, stablecoin, switchChainAsync, writeContractAsync]);
 
 	const handleRepayDebt = useCallback(async () => {
 		if (!selectedTrove || !address) {
 			return;
 		}
 
-		await writeContract({
+		if (chain?.id !== CHAIN_ID) {
+			await switchChainAsync({chainId: CHAIN_ID});
+		}
+
+		await writeContractAsync({
 			address: ADDRESSES[stablecoin].psm,
 			abi: PSM_ABI,
 			chainId: CHAIN_ID,
@@ -222,7 +231,7 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 				'0x0000000000000000000000000000000000000000'
 			]
 		});
-	}, [address, amount, selectedTrove, stablecoin, writeContract]);
+	}, [address, amount, chain?.id, selectedTrove, stablecoin, switchChainAsync, writeContractAsync]);
 
 	const [, debt] = (troveData || [BigInt(0), BigInt(0)]) as [bigint, bigint];
 

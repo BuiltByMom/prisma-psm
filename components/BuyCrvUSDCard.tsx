@@ -2,7 +2,7 @@
 
 import {useCallback, useState} from 'react';
 import {erc20Abi, formatEther, parseEther} from 'viem';
-import {useAccount, useReadContract, useWriteContract} from 'wagmi';
+import {useAccount, useReadContract, useSwitchChain, useWriteContract} from 'wagmi';
 
 import type {ReactNode} from 'react';
 
@@ -33,7 +33,8 @@ type TBuyCrvUSDCardProps = {
  ************************************************************************************************/
 export default function BuyCrvUSDCard({stablecoin}: TBuyCrvUSDCardProps): ReactNode {
 	const {address} = useAccount();
-	const {writeContract} = useWriteContract();
+	const {switchChainAsync, data: chain} = useSwitchChain();
+	const {writeContractAsync} = useWriteContract();
 	const [buyAmount, set_buyAmount] = useState('');
 
 	// Get PSM's crvUSD balance
@@ -70,14 +71,17 @@ export default function BuyCrvUSDCard({stablecoin}: TBuyCrvUSDCardProps): ReactN
 			return;
 		}
 
-		await writeContract({
+		if (chain?.id !== CHAIN_ID) {
+			await switchChainAsync({chainId: CHAIN_ID});
+		}
+		await writeContractAsync({
 			address: ADDRESSES[stablecoin].psm,
 			abi: PSM_ABI,
 			chainId: CHAIN_ID,
 			functionName: 'buyCrvUSD',
 			args: [parseEther(buyAmount)]
 		});
-	}, [buyAmount, stablecoin, writeContract]);
+	}, [buyAmount, chain?.id, stablecoin, switchChainAsync, writeContractAsync]);
 
 	return (
 		<Card className={'border-[#2D2D2D] bg-[#1A1A1A] p-6'}>
