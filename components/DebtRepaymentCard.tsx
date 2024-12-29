@@ -200,55 +200,56 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 		[debt]
 	);
 
-	const handleApprove = useCallback(async () => {
-		if (!BORROWER_OPS_ADDRESSES[stablecoin]) {
-			return;
+	const handleAction = useCallback(async () => {
+		if (!isApproved) {
+			if (!BORROWER_OPS_ADDRESSES[stablecoin]) {
+				return;
+			}
+
+			if (chain?.id !== CHAIN_ID) {
+				await switchChainAsync({chainId: CHAIN_ID});
+			}
+
+			await writeContractAsync({
+				address: BORROWER_OPS_ADDRESSES[stablecoin],
+				abi: BORROWER_OPS_ABI,
+				chainId: CHAIN_ID,
+				functionName: 'setDelegateApproval',
+				args: [ADDRESSES[stablecoin].psm, true]
+			});
+			refetchIsDelegateApproved();
+		} else {
+			if (!selectedTrove || !address || !amount) {
+				return;
+			}
+
+			if (chain?.id !== CHAIN_ID) {
+				await switchChainAsync({chainId: CHAIN_ID});
+			}
+
+			const repayAmount = isApproximatelyDebt(parseEther(amount)) ? MAX_UINT256 : parseEther(amount);
+
+			await writeContractAsync({
+				address: ADDRESSES[stablecoin].psm,
+				abi: PSM_ABI,
+				chainId: CHAIN_ID,
+				functionName: 'repayDebt',
+				args: [
+					selectedTrove,
+					address,
+					repayAmount,
+					'0x0000000000000000000000000000000000000000',
+					'0x0000000000000000000000000000000000000000'
+				]
+			});
 		}
-
-		if (chain?.id !== CHAIN_ID) {
-			await switchChainAsync({chainId: CHAIN_ID});
-		}
-
-		await writeContractAsync({
-			address: BORROWER_OPS_ADDRESSES[stablecoin],
-			abi: BORROWER_OPS_ABI,
-			chainId: CHAIN_ID,
-			functionName: 'setDelegateApproval',
-			args: [ADDRESSES[stablecoin].psm, true]
-		});
-		refetchIsDelegateApproved();
-	}, [chain?.id, refetchIsDelegateApproved, stablecoin, switchChainAsync, writeContractAsync]);
-
-	const handleRepayDebt = useCallback(async () => {
-		if (!selectedTrove || !address) {
-			return;
-		}
-
-		if (chain?.id !== CHAIN_ID) {
-			await switchChainAsync({chainId: CHAIN_ID});
-		}
-
-		// Use MAX_UINT256 if amount is approximately equal to debt
-		const repayAmount = isApproximatelyDebt(parseEther(amount)) ? MAX_UINT256 : parseEther(amount);
-
-		await writeContractAsync({
-			address: ADDRESSES[stablecoin].psm,
-			abi: PSM_ABI,
-			chainId: CHAIN_ID,
-			functionName: 'repayDebt',
-			args: [
-				selectedTrove,
-				address,
-				repayAmount,
-				'0x0000000000000000000000000000000000000000',
-				'0x0000000000000000000000000000000000000000'
-			]
-		});
 	}, [
 		address,
 		amount,
 		chain?.id,
+		isApproved,
 		isApproximatelyDebt,
+		refetchIsDelegateApproved,
 		selectedTrove,
 		stablecoin,
 		switchChainAsync,
@@ -388,27 +389,17 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 						</Button>
 					</div>
 
-					<div className={'grid grid-cols-2 gap-2'}>
-						<Button
-							variant={'secondary'}
-							onClick={handleApprove}
-							disabled={isLoadingDebt || isApproved || debt === BigInt(0)}
-							className={'bg-[#1E1E1E] hover:bg-[#2D2D2D]'}>
-							{'Approve PSM'}
-						</Button>
-						<Button
-							className={'bg-[#0657F9] hover:bg-[#0444c9]'}
-							onClick={handleRepayDebt}
-							disabled={
-								isLoadingDebt ||
-								!amount ||
+					<Button
+						className={'w-full bg-[#0657F9] hover:bg-[#0444c9]'}
+						onClick={handleAction}
+						disabled={
+							isLoadingDebt ||
+							(!isApproved ? debt === BigInt(0) : !amount ||
 								(parseEther(amount) > debt && !isApproximatelyDebt(parseEther(amount))) ||
-								!isApproved ||
-								debt === BigInt(0)
-							}>
-							{'Repay Debt'}
-						</Button>
-					</div>
+								debt === BigInt(0))
+						}>
+						{isApproved ? 'Repay Debt' : 'Approve PSM'}
+					</Button>
 				</div>
 			</div>
 		</Card>
