@@ -46,7 +46,10 @@ const TROVE_MANAGER_ABI = [
 
 const BORROWER_OPS_ABI = [
 	{
-		inputs: [{internalType: 'address', name: 'delegate', type: 'address'}],
+		inputs: [
+			{internalType: 'address', name: 'owner', type: 'address'},
+			{internalType: 'address', name: 'delegate', type: 'address'}
+		],
 		name: 'isApprovedDelegate',
 		outputs: [{internalType: 'bool', name: '', type: 'bool'}],
 		stateMutability: 'view',
@@ -136,13 +139,13 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 	});
 
 	// Check if PSM is approved delegate using borrowerOps from PSM
-	const {data: isDelegateApproved} = useReadContract({
+	const {data: isDelegateApproved, refetch: refetchIsDelegateApproved} = useReadContract({
 		address: BORROWER_OPS_ADDRESSES[stablecoin],
 		abi: BORROWER_OPS_ABI,
 		chainId: CHAIN_ID,
 		functionName: 'isApprovedDelegate',
-		args: [ADDRESSES[stablecoin].psm],
-		query: {enabled: !!BORROWER_OPS_ADDRESSES[stablecoin]}
+		args: [address!, ADDRESSES[stablecoin].psm],
+		query: {enabled: !!BORROWER_OPS_ADDRESSES[stablecoin] && !!address}
 	});
 
 	// Get trove debt
@@ -213,8 +216,8 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 			functionName: 'setDelegateApproval',
 			args: [ADDRESSES[stablecoin].psm, true]
 		});
-		set_isApproved(true);
-	}, [chain?.id, stablecoin, switchChainAsync, writeContractAsync]);
+		refetchIsDelegateApproved();
+	}, [chain?.id, refetchIsDelegateApproved, stablecoin, switchChainAsync, writeContractAsync]);
 
 	const handleRepayDebt = useCallback(async () => {
 		if (!selectedTrove || !address) {
@@ -366,7 +369,7 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 					</div>
 				)}
 
-				<div className={'space-y-2'}>
+				<div className={'space-y-4'}>
 					<div className={'flex items-center gap-2'}>
 						<Input
 							type={'number'}
