@@ -7,25 +7,44 @@ import {Card} from '@/components/ui/card';
 
 type TFAQItem = {
 	question: string;
-	answer: string;
+	answer: string | ReactNode;
 };
 
 const FAQ_ITEMS: TFAQItem[] = [
 	{
 		question: 'What is Prisma PSM?',
-		answer: 'Prisma PSM (Peg Stability Module) allows users to swap between stablecoins at a 1:1 ratio, helping maintain the peg of Prisma stablecoins.'
+		answer: (
+			<div className={'space-y-4'}>
+				<p>{'The Prisma PSM (Peg Stability Module) serves two key purposes:'}</p>
+				<ol className={'list-decimal space-y-2 pl-4'}>
+					<li>
+						{'Close loans: Allows borrowers to repay and close their positions using crvUSD at a 1:1 rate.'}
+					</li>
+					<li>
+						{
+							'Purchase crvUSD: Allows anyone to permissionlessly burn mkUSD or ULTRA in exchange for crvUSD at a 1:1 rate.'
+						}
+					</li>
+				</ol>
+				<p>{'There are two separate PSMs: one for mkUSD and one for ULTRA.'}</p>
+			</div>
+		)
 	},
 	{
-		question: 'How does debt repayment work?',
-		answer: 'You can repay your debt by approving the PSM contract and then repaying your desired amount. The repayment will be processed at a 1:1 ratio.'
+		question: 'How do I repay my loan using the PSM?',
+		answer: 'You can use the Prisma PSM to repay your loan with crvUSD at a 1:1 rate. This action will reduce your debt and close your open loan on Prisma.'
+	},
+	{
+		question: 'Why is the PSM important during the shutdown?',
+		answer: 'The PSM provides a stable and predictable mechanism for borrowers to close their positions. It assits borrowers by eliminating the need to purchase mkUSD or ULTRA from the market, where prices may be significantly inflated.'
+	},
+	{
+		question: 'How can I purchase crvUSD from the PSM?',
+		answer: 'The PSM is perpetually willing to exchange its crvUSD balance at a 1:1 rate for mkUSD or ULTRA.'
 	},
 	{
 		question: 'Why do I need to approve first?',
-		answer: 'Approval is a security feature of ERC20 tokens. It gives the PSM contract permission to use your tokens for debt repayment.'
-	},
-	{
-		question: 'What happens after repayment?',
-		answer: 'After repayment, your debt position will be reduced by the repaid amount. This will be reflected in your trove details.'
+		answer: 'Before performing any loan repayments via the PSM, you must approve the PSM to interact with your position via the Borrower Operations contract.'
 	}
 ];
 
@@ -36,7 +55,7 @@ const FAQ_ITEMS: TFAQItem[] = [
  ************************************************************************************************/
 export default function FAQCard(): ReactNode {
 	return (
-		<Card className={'mt-4 border-[#2D2D2D] bg-[#1A1A1A] p-6'}>
+		<Card className={'border-[#2D2D2D] bg-[#1A1A1A] p-6'}>
 			<div className={'space-y-6'}>
 				<h3 className={'text-xl font-semibold text-white'}>{'FAQ'}</h3>
 				<Accordion

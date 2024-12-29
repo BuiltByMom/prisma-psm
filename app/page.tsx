@@ -6,6 +6,7 @@ import {useAccount} from 'wagmi';
 
 import type {ReactNode} from 'react';
 
+import BuyCrvUSDCard from '@/components/BuyCrvUSDCard';
 import DebtRepaymentCard from '@/components/DebtRepaymentCard';
 import FAQCard from '@/components/FAQCard';
 import {Card} from '@/components/ui/card';
@@ -86,39 +87,37 @@ export default function Home(): ReactNode {
 							</TabsList>
 
 							<TabsContent value={'mkUSD'}>
-								<div className={'space-y-4'}>
-									{isConnected ? (
+								{isConnected ? (
+									<div className={'space-y-4'}>
 										<DebtRepaymentCard stablecoin={'mkUSD'} />
-									) : (
-										<Card
-											className={
-												'flex min-h-[200px] items-center justify-center border-[#2D2D2D] bg-[#1A1A1A] p-6'
-											}>
-											<p className={'text-gray-400'}>
-												{'Please connect your wallet to continue'}
-											</p>
-										</Card>
-									)}
-									<FAQCard />
-								</div>
+										<BuyCrvUSDCard stablecoin={'mkUSD'} />
+										<FAQCard />
+									</div>
+								) : (
+									<Card
+										className={
+											'flex min-h-[200px] items-center justify-center border-[#2D2D2D] bg-[#1A1A1A] p-6'
+										}>
+										<p className={'text-gray-400'}>{'Please connect your wallet to continue'}</p>
+									</Card>
+								)}
 							</TabsContent>
 
 							<TabsContent value={'ULTRA'}>
-								<div className={'space-y-4'}>
-									{isConnected ? (
+								{isConnected ? (
+									<div className={'space-y-4'}>
 										<DebtRepaymentCard stablecoin={'ULTRA'} />
-									) : (
-										<Card
-											className={
-												'flex min-h-[200px] items-center justify-center border-[#2D2D2D] bg-[#1A1A1A] p-6'
-											}>
-											<p className={'text-gray-400'}>
-												{'Please connect your wallet to continue'}
-											</p>
-										</Card>
-									)}
-									<FAQCard />
-								</div>
+										<BuyCrvUSDCard stablecoin={'ULTRA'} />
+										<FAQCard />
+									</div>
+								) : (
+									<Card
+										className={
+											'flex min-h-[200px] items-center justify-center border-[#2D2D2D] bg-[#1A1A1A] p-6'
+										}>
+										<p className={'text-gray-400'}>{'Please connect your wallet to continue'}</p>
+									</Card>
+								)}
 							</TabsContent>
 						</Tabs>
 					</div>

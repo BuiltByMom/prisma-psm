@@ -2,6 +2,8 @@ import type {Address} from 'viem';
 
 export const CHAIN_ID = 69;
 
+export const CRVUSD_ADDRESS = '0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E';
+
 export const PSM_ADDRESSES: {[key: string]: Address} = {
 	mkUSD: '0xe3c77ec951bb8c19386a28c5bdf99d7750bd59f5',
 	ULTRA: '0xa978891e9d8fe36838891ba9e2ae77727ee63dc8'

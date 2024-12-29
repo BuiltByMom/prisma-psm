@@ -2,7 +2,7 @@
 
 import {useCallback, useEffect, useState} from 'react';
 import Link from 'next/link';
-import {formatEther, parseEther} from 'viem';
+import {erc20Abi, formatEther, parseEther} from 'viem';
 import {useAccount, useReadContract, useWriteContract} from 'wagmi';
 
 import type {ReactNode} from 'react';
@@ -32,6 +32,13 @@ const TROVE_MANAGER_ABI = [
 			{internalType: 'uint256', name: '', type: 'uint256'},
 			{internalType: 'uint256', name: '', type: 'uint256'}
 		],
+		stateMutability: 'view',
+		type: 'function'
+	},
+	{
+		inputs: [],
+		name: 'collateralToken',
+		outputs: [{internalType: 'address', name: '', type: 'address'}],
 		stateMutability: 'view',
 		type: 'function'
 	}
@@ -74,6 +81,20 @@ const PSM_ABI = [
 			{internalType: 'address', name: 'lowerHint', type: 'address'}
 		],
 		name: 'repayDebt',
+		outputs: [],
+		stateMutability: 'nonpayable',
+		type: 'function'
+	},
+	{
+		inputs: [],
+		name: 'crvUSDBalance',
+		outputs: [{internalType: 'uint256', name: '', type: 'uint256'}],
+		stateMutability: 'view',
+		type: 'function'
+	},
+	{
+		inputs: [{internalType: 'uint256', name: 'amount', type: 'uint256'}],
+		name: 'buyCrvUSD',
 		outputs: [],
 		stateMutability: 'nonpayable',
 		type: 'function'
@@ -135,6 +156,24 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 		functionName: 'getTroveCollAndDebt',
 		args: [address!],
 		query: {enabled: !!selectedTrove && !!address}
+	});
+
+	// Get collateral token address
+	const {data: collateralTokenAddress} = useReadContract({
+		address: selectedTrove!,
+		abi: TROVE_MANAGER_ABI,
+		chainId: CHAIN_ID,
+		functionName: 'collateralToken',
+		query: {enabled: !!selectedTrove}
+	});
+
+	// Get collateral token name
+	const {data: collateralName, isLoading: isLoadingCollateral} = useReadContract({
+		address: collateralTokenAddress!,
+		abi: erc20Abi,
+		chainId: CHAIN_ID,
+		functionName: 'name',
+		query: {enabled: !!collateralTokenAddress}
 	});
 
 	useEffect(() => {
@@ -259,6 +298,16 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 								{selectedTrove?.slice(-4)}
 							</span>
 						</Link>
+					</div>
+					<div className={'flex items-center justify-between'}>
+						<span className={'text-sm text-gray-400'}>{'Collateral'}</span>
+						<span className={'text-sm text-white'}>
+							{isLoadingCollateral ? (
+								<span className={'inline-block h-4 w-16 animate-pulse rounded bg-[#2D2D2D]'} />
+							) : (
+								collateralName
+							)}
+						</span>
 					</div>
 					<div className={'flex items-center justify-between'}>
 						<span className={'text-sm text-gray-400'}>{'Token'}</span>
