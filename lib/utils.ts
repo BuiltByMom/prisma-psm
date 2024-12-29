@@ -12,7 +12,7 @@ export function cn(...inputs: ClassValue[]): string {
  ************************************************************************************************/
 export function formatNumber({
 	value,
-	decimals = 4,
+	decimals = 2,
 	compact = false
 }: {
 	value: bigint | string | number;

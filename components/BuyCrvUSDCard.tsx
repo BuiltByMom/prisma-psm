@@ -9,7 +9,7 @@ import type {ReactNode} from 'react';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
-import {ADDRESSES, CHAIN_ID, CRVUSD_ADDRESS} from '@/lib/constants';
+import {ADDRESSES, CHAIN_ID, TOKENS} from '@/lib/constants';
 import {formatNumber} from '@/lib/utils';
 
 const PSM_ABI = [
@@ -45,7 +45,7 @@ export default function BuyCrvUSDCard({stablecoin}: TBuyCrvUSDCardProps): ReactN
 
 	// Get PSM's crvUSD balance
 	const {data: psmCrvUSDBalance, isPending: isLoadingPSMBalance} = useReadContract({
-		address: CRVUSD_ADDRESS,
+		address: TOKENS.crvUSD,
 		abi: erc20Abi,
 		chainId: CHAIN_ID,
 		functionName: 'balanceOf',
@@ -54,7 +54,7 @@ export default function BuyCrvUSDCard({stablecoin}: TBuyCrvUSDCardProps): ReactN
 
 	// Get user's crvUSD balance
 	const {data: userCrvUSDBalance, isPending: isLoadingUserCrvUSD} = useReadContract({
-		address: CRVUSD_ADDRESS,
+		address: TOKENS.crvUSD,
 		abi: erc20Abi,
 		chainId: CHAIN_ID,
 		functionName: 'balanceOf',

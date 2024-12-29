@@ -1,9 +1,12 @@
 'use client';
 
+import Link from 'next/link';
+
 import type {ReactNode} from 'react';
 
 import {Accordion, AccordionContent, AccordionItem, AccordionTrigger} from '@/components/ui/accordion';
 import {Card} from '@/components/ui/card';
+import {BORROWER_OPS_ADDRESSES, PSM_ADDRESSES, TOKENS} from '@/lib/constants';
 
 type TFAQItem = {
 	question: string;
@@ -11,6 +14,114 @@ type TFAQItem = {
 };
 
 const FAQ_ITEMS: TFAQItem[] = [
+	{
+		question: 'Contract Addresses',
+		answer: (
+			<div className={'space-y-4'}>
+				<div>
+					<h4 className={'mb-2 font-medium text-white'}>{'PSM Contracts'}</h4>
+					<div className={'space-y-1'}>
+						<div className={'flex items-center justify-between'}>
+							<span className={'text-gray-400'}>{'mkUSD PSM:'}</span>
+							<Link
+								href={`https://etherscan.io/address/${PSM_ADDRESSES.mkUSD}`}
+								target={'_blank'}
+								rel={'noopener noreferrer'}
+								className={
+									'font-mono text-white transition-colors hover:text-[#0657F9] active:text-[#0444c9]'
+								}>
+								{PSM_ADDRESSES.mkUSD}
+							</Link>
+						</div>
+						<div className={'flex items-center justify-between'}>
+							<span className={'text-gray-400'}>{'ULTRA PSM:'}</span>
+							<Link
+								href={`https://etherscan.io/address/${PSM_ADDRESSES.ULTRA}`}
+								target={'_blank'}
+								rel={'noopener noreferrer'}
+								className={
+									'font-mono text-white transition-colors hover:text-[#0657F9] active:text-[#0444c9]'
+								}>
+								{PSM_ADDRESSES.ULTRA}
+							</Link>
+						</div>
+					</div>
+				</div>
+
+				<div>
+					<h4 className={'mb-2 font-medium text-white'}>{'Borrower Operations'}</h4>
+					<div className={'space-y-1'}>
+						<div className={'flex items-center justify-between'}>
+							<span className={'text-gray-400'}>{'mkUSD:'}</span>
+							<Link
+								href={`https://etherscan.io/address/${BORROWER_OPS_ADDRESSES.mkUSD}`}
+								target={'_blank'}
+								rel={'noopener noreferrer'}
+								className={
+									'font-mono text-white transition-colors hover:text-[#0657F9] active:text-[#0444c9]'
+								}>
+								{BORROWER_OPS_ADDRESSES.mkUSD}
+							</Link>
+						</div>
+						<div className={'flex items-center justify-between'}>
+							<span className={'text-gray-400'}>{'ULTRA:'}</span>
+							<Link
+								href={`https://etherscan.io/address/${BORROWER_OPS_ADDRESSES.ULTRA}`}
+								target={'_blank'}
+								rel={'noopener noreferrer'}
+								className={
+									'font-mono text-white transition-colors hover:text-[#0657F9] active:text-[#0444c9]'
+								}>
+								{BORROWER_OPS_ADDRESSES.ULTRA}
+							</Link>
+						</div>
+					</div>
+				</div>
+
+				<div>
+					<h4 className={'mb-2 font-medium text-white'}>{'Tokens'}</h4>
+					<div className={'space-y-1'}>
+						<div className={'flex items-center justify-between'}>
+							<span className={'text-gray-400'}>{'mkUSD:'}</span>
+							<Link
+								href={`https://etherscan.io/address/${TOKENS.mkUSD}`}
+								target={'_blank'}
+								rel={'noopener noreferrer'}
+								className={
+									'font-mono text-white transition-colors hover:text-[#0657F9] active:text-[#0444c9]'
+								}>
+								{TOKENS.mkUSD}
+							</Link>
+						</div>
+						<div className={'flex items-center justify-between'}>
+							<span className={'text-gray-400'}>{'ULTRA:'}</span>
+							<Link
+								href={`https://etherscan.io/address/${TOKENS.ULTRA}`}
+								target={'_blank'}
+								rel={'noopener noreferrer'}
+								className={
+									'font-mono text-white transition-colors hover:text-[#0657F9] active:text-[#0444c9]'
+								}>
+								{TOKENS.ULTRA}
+							</Link>
+						</div>
+						<div className={'flex items-center justify-between'}>
+							<span className={'text-gray-400'}>{'crvUSD:'}</span>
+							<Link
+								href={`https://etherscan.io/address/${TOKENS.crvUSD}`}
+								target={'_blank'}
+								rel={'noopener noreferrer'}
+								className={
+									'font-mono text-white transition-colors hover:text-[#0657F9] active:text-[#0444c9]'
+								}>
+								{TOKENS.crvUSD}
+							</Link>
+						</div>
+					</div>
+				</div>
+			</div>
+		)
+	},
 	{
 		question: 'What is Prisma PSM?',
 		answer: (

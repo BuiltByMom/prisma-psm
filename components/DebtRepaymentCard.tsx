@@ -11,7 +11,7 @@ import type {Address} from 'viem';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
-import {ADDRESSES, CHAIN_ID} from '@/lib/constants';
+import {ADDRESSES, BORROWER_OPS_ADDRESSES, CHAIN_ID} from '@/lib/constants';
 import {formatNumber} from '@/lib/utils';
 
 const TROVE_HELPER_ABI = [
@@ -135,22 +135,14 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 		query: {enabled: !!address}
 	});
 
-	// Get borrower ops address
-	const {data: borrowerOpsAddress} = useReadContract({
-		address: ADDRESSES[stablecoin].psm,
-		abi: PSM_ABI,
-		chainId: CHAIN_ID,
-		functionName: 'borrowerOps'
-	});
-
-	// Check if PSM is approved delegate
+	// Check if PSM is approved delegate using borrowerOps from PSM
 	const {data: isDelegateApproved} = useReadContract({
-		address: borrowerOpsAddress!,
+		address: BORROWER_OPS_ADDRESSES[stablecoin],
 		abi: BORROWER_OPS_ABI,
 		chainId: CHAIN_ID,
 		functionName: 'isApprovedDelegate',
 		args: [ADDRESSES[stablecoin].psm],
-		query: {enabled: !!borrowerOpsAddress}
+		query: {enabled: !!BORROWER_OPS_ADDRESSES[stablecoin]}
 	});
 
 	// Get trove debt
@@ -206,7 +198,7 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 	);
 
 	const handleApprove = useCallback(async () => {
-		if (!borrowerOpsAddress) {
+		if (!BORROWER_OPS_ADDRESSES[stablecoin]) {
 			return;
 		}
 
@@ -215,14 +207,14 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 		}
 
 		await writeContractAsync({
-			address: borrowerOpsAddress,
+			address: BORROWER_OPS_ADDRESSES[stablecoin],
 			abi: BORROWER_OPS_ABI,
 			chainId: CHAIN_ID,
 			functionName: 'setDelegateApproval',
 			args: [ADDRESSES[stablecoin].psm, true]
 		});
 		set_isApproved(true);
-	}, [borrowerOpsAddress, chain?.id, stablecoin, switchChainAsync, writeContractAsync]);
+	}, [chain?.id, stablecoin, switchChainAsync, writeContractAsync]);
 
 	const handleRepayDebt = useCallback(async () => {
 		if (!selectedTrove || !address) {
@@ -342,10 +334,6 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 								collateralName
 							)}
 						</span>
-					</div>
-					<div className={'flex items-center justify-between'}>
-						<span className={'text-sm text-gray-400'}>{'Token'}</span>
-						<span className={'text-sm text-white'}>{stablecoin}</span>
 					</div>
 					<div className={'flex items-center justify-between'}>
 						<span className={'text-sm text-gray-400'}>{'Current Debt'}</span>
