@@ -43,7 +43,7 @@ export default function BuyCrvUSDCard({stablecoin}: TBuyCrvUSDCardProps): ReactN
 	const {switchChainAsync, data: chain} = useSwitchChain();
 	const {writeContractAsync} = useWriteContract();
 	const [buyAmount, set_buyAmount] = useState('');
-	const {data: blockNumber} = useBlockNumber({chainId: CHAIN_ID});
+	const {data: blockNumber} = useBlockNumber({chainId: CHAIN_ID, watch: true});
 
 	// Get PSM's crvUSD balance
 	const {

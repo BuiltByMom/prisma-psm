@@ -4,7 +4,7 @@ import {useCallback, useEffect, useState} from 'react';
 import Link from 'next/link';
 import {toast} from 'sonner';
 import {erc20Abi, formatEther, parseEther, zeroAddress} from 'viem';
-import {useAccount, useConfig, useReadContract, useSwitchChain, useWriteContract} from 'wagmi';
+import {useAccount, useBlockNumber, useConfig, useReadContract, useSwitchChain, useWriteContract} from 'wagmi';
 import {waitForTransactionReceipt} from '@wagmi/core';
 
 import type {ReactNode} from 'react';
@@ -153,8 +153,14 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 	const [isApprovedDelegate, set_isApprovedDelegate] = useState(false);
 	const [isApprovedCrvUSD, set_isApprovedCrvUSD] = useState(false);
 
+	const {data: blockNumber} = useBlockNumber({chainId: CHAIN_ID, watch: true});
+
 	// Get active trove managers
-	const {data: activeTroveManagers, isPending: isLoadingTroves} = useReadContract({
+	const {
+		data: activeTroveManagers,
+		isPending: isLoadingTroves,
+		refetch: refetchTroveManagers
+	} = useReadContract({
 		address: ADDRESSES[stablecoin].troveHelper,
 		abi: TROVE_HELPER_ABI,
 		chainId: CHAIN_ID,
@@ -216,6 +222,15 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 	});
 
 	const [, debt] = (troveData || [BigInt(0), BigInt(0)]) as [bigint, bigint];
+
+	useEffect(() => {
+		Promise.all([
+			refetchTroveManagers(),
+			refetchIsDelegateApproved(),
+			refetchIsCrvUSDApproved(),
+			refetchTroveData()
+		]);
+	}, [blockNumber, refetchIsCrvUSDApproved, refetchIsDelegateApproved, refetchTroveData, refetchTroveManagers]);
 
 	useEffect(() => {
 		if (activeTroveManagers) {
@@ -313,7 +328,6 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 							if (receipt.status === 'success') {
 								refetchIsDelegateApproved();
 							}
-							console.warn(receipt);
 							return receipt;
 						} catch (error) {
 							console.error(error);
@@ -355,7 +369,7 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 								args: [selectedTrove, address, repayAmount, zeroAddress, zeroAddress]
 							});
 
-							const receipt = await waitForTransactionReceipt(config, {hash: tx});
+							const receipt = await waitForTransactionReceipt(config, {hash: tx, confirmations: 1});
 							if (receipt.status === 'success') {
 								refetchIsDelegateApproved();
 							}
