@@ -2,7 +2,7 @@
 
 import {useCallback, useEffect, useState} from 'react';
 import Link from 'next/link';
-import {erc20Abi, formatEther, parseEther} from 'viem';
+import {erc20Abi, formatEther, parseEther, zeroAddress} from 'viem';
 import {useAccount, useReadContract, useSwitchChain, useWriteContract} from 'wagmi';
 
 import type {ReactNode} from 'react';
@@ -77,11 +77,31 @@ const PSM_ABI = [
 	},
 	{
 		inputs: [
-			{internalType: 'address', name: 'troveManager', type: 'address'},
-			{internalType: 'address', name: 'account', type: 'address'},
-			{internalType: 'uint256', name: 'amount', type: 'uint256'},
-			{internalType: 'address', name: 'upperHint', type: 'address'},
-			{internalType: 'address', name: 'lowerHint', type: 'address'}
+			{
+				internalType: 'address',
+				name: '_troveManager',
+				type: 'address'
+			},
+			{
+				internalType: 'address',
+				name: '_account',
+				type: 'address'
+			},
+			{
+				internalType: 'uint256',
+				name: '_amount',
+				type: 'uint256'
+			},
+			{
+				internalType: 'address',
+				name: '_upperHint',
+				type: 'address'
+			},
+			{
+				internalType: 'address',
+				name: '_lowerHint',
+				type: 'address'
+			}
 		],
 		name: 'repayDebt',
 		outputs: [],
@@ -234,13 +254,7 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 				abi: PSM_ABI,
 				chainId: CHAIN_ID,
 				functionName: 'repayDebt',
-				args: [
-					selectedTrove,
-					address,
-					repayAmount,
-					'0x0000000000000000000000000000000000000000',
-					'0x0000000000000000000000000000000000000000'
-				]
+				args: [selectedTrove, address, repayAmount, zeroAddress, zeroAddress]
 			});
 		}
 	}, [
@@ -394,9 +408,11 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 						onClick={handleAction}
 						disabled={
 							isLoadingDebt ||
-							(!isApproved ? debt === BigInt(0) : !amount ||
-								(parseEther(amount) > debt && !isApproximatelyDebt(parseEther(amount))) ||
-								debt === BigInt(0))
+							(!isApproved
+								? debt === BigInt(0)
+								: !amount ||
+									(parseEther(amount) > debt && !isApproximatelyDebt(parseEther(amount))) ||
+									debt === BigInt(0))
 						}>
 						{isApproved ? 'Repay Debt' : 'Approve PSM'}
 					</Button>

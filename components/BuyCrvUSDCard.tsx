@@ -64,7 +64,7 @@ export default function BuyCrvUSDCard({stablecoin}: TBuyCrvUSDCardProps): ReactN
 
 	// Get user's debt token balance (mkUSD/ULTRA)
 	const {data: userDebtTokenBalance, isPending: isLoadingUserDebt} = useReadContract({
-		address: ADDRESSES[stablecoin].psm,
+		address: TOKENS[stablecoin],
 		abi: erc20Abi,
 		chainId: CHAIN_ID,
 		functionName: 'balanceOf',
@@ -113,7 +113,7 @@ export default function BuyCrvUSDCard({stablecoin}: TBuyCrvUSDCardProps): ReactN
 							{isLoadingUserCrvUSD ? (
 								<span className={'inline-block h-4 w-16 animate-pulse rounded bg-[#2D2D2D]'} />
 							) : (
-								`${formatNumber({value: userCrvUSDBalance || BigInt(0)})}`
+								`${formatNumber({value: userCrvUSDBalance || BigInt(0)})} crvUSD`
 							)}
 						</span>
 					</div>
