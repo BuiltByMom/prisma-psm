@@ -223,14 +223,40 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 
 	const [, debt] = (troveData || [BigInt(0), BigInt(0)]) as [bigint, bigint];
 
-	useEffect(() => {
-		Promise.all([
+	// Get user's crvUSD balance
+	const {
+		data: userCrvUSDBalance,
+		isPending: isLoadingUserCrvUSD,
+		refetch: refetchUserCrvUSDBalance
+	} = useReadContract({
+		address: TOKENS.crvUSD,
+		abi: erc20Abi,
+		chainId: CHAIN_ID,
+		functionName: 'balanceOf',
+		args: [address!],
+		query: {enabled: !!address}
+	});
+
+	// Update refetch function to include crvUSD balance
+	const refetchAll = useCallback(async () => {
+		await Promise.all([
 			refetchTroveManagers(),
 			refetchIsDelegateApproved(),
 			refetchIsCrvUSDApproved(),
+			refetchUserCrvUSDBalance(),
 			refetchTroveData()
 		]);
-	}, [blockNumber, refetchIsCrvUSDApproved, refetchIsDelegateApproved, refetchTroveData, refetchTroveManagers]);
+	}, [
+		refetchTroveManagers,
+		refetchIsDelegateApproved,
+		refetchIsCrvUSDApproved,
+		refetchTroveData,
+		refetchUserCrvUSDBalance
+	]);
+
+	useEffect(() => {
+		refetchAll();
+	}, [blockNumber, refetchAll]);
 
 	useEffect(() => {
 		if (activeTroveManagers) {
@@ -261,6 +287,15 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 		},
 		[debt]
 	);
+
+	// Update max amount handler
+	const handleSetMaxAmount = useCallback(() => {
+		if (!debt || !userCrvUSDBalance) {
+			return;
+		}
+		const maxAmount = userCrvUSDBalance < debt ? userCrvUSDBalance : debt;
+		set_amount(formatEther(maxAmount));
+	}, [debt, userCrvUSDBalance]);
 
 	const handleAction = useCallback(async () => {
 		if (!isApprovedCrvUSD) {
@@ -388,7 +423,7 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 				);
 
 				await txPromise;
-				await Promise.all([refetchTroveData()]);
+				await refetchAll();
 			} catch (error) {
 				console.error(error);
 			}
@@ -403,7 +438,7 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 		isApproximatelyDebt,
 		refetchIsCrvUSDApproved,
 		refetchIsDelegateApproved,
-		refetchTroveData,
+		refetchAll,
 		selectedTrove,
 		stablecoin,
 		switchChainAsync,
@@ -494,6 +529,16 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 						</span>
 					</div>
 					<div className={'flex items-center justify-between'}>
+						<span className={'text-sm text-gray-400'}>{'Your crvUSD Balance'}</span>
+						<span className={'text-sm text-white'}>
+							{isLoadingUserCrvUSD ? (
+								<span className={'inline-block h-4 w-16 animate-pulse rounded bg-[#2D2D2D]'} />
+							) : (
+								`${formatNumber({value: userCrvUSDBalance || BigInt(0)})} crvUSD`
+							)}
+						</span>
+					</div>
+					<div className={'flex items-center justify-between'}>
 						<span className={'text-sm text-gray-400'}>{'Current Debt'}</span>
 						<span className={'text-sm text-white'}>
 							{isLoadingDebt ? (
@@ -536,9 +581,9 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 						/>
 						<Button
 							variant={'secondary'}
-							onClick={() => set_amount(formatEther(debt))}
+							onClick={handleSetMaxAmount}
 							className={'bg-[#1E1E1E] hover:bg-[#2D2D2D]'}
-							disabled={isLoadingDebt}>
+							disabled={isLoadingDebt || !userCrvUSDBalance}>
 							{'Max'}
 						</Button>
 					</div>

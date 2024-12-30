@@ -58,20 +58,6 @@ export default function BuyCrvUSDCard({stablecoin}: TBuyCrvUSDCardProps): ReactN
 		args: [ADDRESSES[stablecoin].psm]
 	});
 
-	// Get user's crvUSD balance
-	const {
-		data: userCrvUSDBalance,
-		isPending: isLoadingUserCrvUSD,
-		refetch: refetchUserCrvUSDBalance
-	} = useReadContract({
-		address: TOKENS.crvUSD,
-		abi: erc20Abi,
-		chainId: CHAIN_ID,
-		functionName: 'balanceOf',
-		args: [address!],
-		query: {enabled: !!address}
-	});
-
 	// Get user's debt token balance (mkUSD/ULTRA)
 	const {
 		data: userDebtTokenBalance,
@@ -87,8 +73,8 @@ export default function BuyCrvUSDCard({stablecoin}: TBuyCrvUSDCardProps): ReactN
 	});
 
 	useEffect(() => {
-		Promise.all([refetchCRVUSDBalanceOf(), refetchUserCrvUSDBalance(), refetchUserDebtTokenBalance()]);
-	}, [blockNumber, refetchCRVUSDBalanceOf, refetchUserCrvUSDBalance, refetchUserDebtTokenBalance]);
+		Promise.all([refetchCRVUSDBalanceOf(), refetchUserDebtTokenBalance()]);
+	}, [blockNumber, refetchCRVUSDBalanceOf, refetchUserDebtTokenBalance]);
 
 	const handleBuyCrvUSD = useCallback(async () => {
 		if (!buyAmount) {
@@ -125,7 +111,7 @@ export default function BuyCrvUSDCard({stablecoin}: TBuyCrvUSDCardProps): ReactN
 			);
 
 			await txPromise;
-			await Promise.all([refetchCRVUSDBalanceOf(), refetchUserCrvUSDBalance(), refetchUserDebtTokenBalance()]);
+			await Promise.all([refetchCRVUSDBalanceOf(), refetchUserDebtTokenBalance()]);
 		} catch (error) {
 			console.error(error);
 		}
@@ -133,12 +119,19 @@ export default function BuyCrvUSDCard({stablecoin}: TBuyCrvUSDCardProps): ReactN
 		buyAmount,
 		chain?.id,
 		refetchCRVUSDBalanceOf,
-		refetchUserCrvUSDBalance,
 		refetchUserDebtTokenBalance,
 		stablecoin,
 		switchChainAsync,
 		writeContractAsync
 	]);
+
+	const handleSetMaxAmount = useCallback(() => {
+		if (!userDebtTokenBalance || !psmCrvUSDBalance) {
+			return;
+		}
+		const maxAmount = userDebtTokenBalance < psmCrvUSDBalance ? userDebtTokenBalance : psmCrvUSDBalance;
+		set_buyAmount(formatEther(maxAmount));
+	}, [psmCrvUSDBalance, userDebtTokenBalance]);
 
 	return (
 		<Card className={'border-[#2D2D2D] bg-[#1A1A1A] p-6'}>
@@ -155,16 +148,6 @@ export default function BuyCrvUSDCard({stablecoin}: TBuyCrvUSDCardProps): ReactN
 								<span className={'inline-block h-4 w-16 animate-pulse rounded bg-[#2D2D2D]'} />
 							) : (
 								`${formatNumber({value: psmCrvUSDBalance || 0})} crvUSD`
-							)}
-						</span>
-					</div>
-					<div className={'flex items-center justify-between'}>
-						<span className={'text-sm text-gray-400'}>{'Your crvUSD Balance'}</span>
-						<span className={'text-sm text-white'}>
-							{isLoadingUserCrvUSD ? (
-								<span className={'inline-block h-4 w-16 animate-pulse rounded bg-[#2D2D2D]'} />
-							) : (
-								`${formatNumber({value: userCrvUSDBalance || BigInt(0)})} crvUSD`
 							)}
 						</span>
 					</div>
@@ -191,9 +174,9 @@ export default function BuyCrvUSDCard({stablecoin}: TBuyCrvUSDCardProps): ReactN
 						/>
 						<Button
 							variant={'secondary'}
-							onClick={() => set_buyAmount(formatEther(userDebtTokenBalance || BigInt(0)))}
+							onClick={handleSetMaxAmount}
 							className={'bg-[#1E1E1E] hover:bg-[#2D2D2D]'}
-							disabled={!userDebtTokenBalance}>
+							disabled={!userDebtTokenBalance || !psmCrvUSDBalance}>
 							{'Max'}
 						</Button>
 					</div>
