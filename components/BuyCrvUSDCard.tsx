@@ -1,8 +1,9 @@
 'use client';
 
-import {useCallback, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
+import {toast} from 'sonner';
 import {erc20Abi, formatEther, parseEther} from 'viem';
-import {useAccount, useReadContract, useSwitchChain, useWriteContract} from 'wagmi';
+import {useAccount, useBlockNumber, useReadContract, useSwitchChain, useWriteContract} from 'wagmi';
 
 import type {ReactNode} from 'react';
 
@@ -42,9 +43,14 @@ export default function BuyCrvUSDCard({stablecoin}: TBuyCrvUSDCardProps): ReactN
 	const {switchChainAsync, data: chain} = useSwitchChain();
 	const {writeContractAsync} = useWriteContract();
 	const [buyAmount, set_buyAmount] = useState('');
+	const {data: blockNumber} = useBlockNumber({chainId: CHAIN_ID});
 
 	// Get PSM's crvUSD balance
-	const {data: psmCrvUSDBalance, isPending: isLoadingPSMBalance} = useReadContract({
+	const {
+		data: psmCrvUSDBalance,
+		isPending: isLoadingPSMBalance,
+		refetch: refetchCRVUSDBalanceOf
+	} = useReadContract({
 		address: TOKENS.crvUSD,
 		abi: erc20Abi,
 		chainId: CHAIN_ID,
@@ -53,7 +59,11 @@ export default function BuyCrvUSDCard({stablecoin}: TBuyCrvUSDCardProps): ReactN
 	});
 
 	// Get user's crvUSD balance
-	const {data: userCrvUSDBalance, isPending: isLoadingUserCrvUSD} = useReadContract({
+	const {
+		data: userCrvUSDBalance,
+		isPending: isLoadingUserCrvUSD,
+		refetch: refetchUserCrvUSDBalance
+	} = useReadContract({
 		address: TOKENS.crvUSD,
 		abi: erc20Abi,
 		chainId: CHAIN_ID,
@@ -63,7 +73,11 @@ export default function BuyCrvUSDCard({stablecoin}: TBuyCrvUSDCardProps): ReactN
 	});
 
 	// Get user's debt token balance (mkUSD/ULTRA)
-	const {data: userDebtTokenBalance, isPending: isLoadingUserDebt} = useReadContract({
+	const {
+		data: userDebtTokenBalance,
+		isPending: isLoadingUserDebt,
+		refetch: refetchUserDebtTokenBalance
+	} = useReadContract({
 		address: TOKENS[stablecoin],
 		abi: erc20Abi,
 		chainId: CHAIN_ID,
@@ -72,22 +86,59 @@ export default function BuyCrvUSDCard({stablecoin}: TBuyCrvUSDCardProps): ReactN
 		query: {enabled: !!address}
 	});
 
+	useEffect(() => {
+		Promise.all([refetchCRVUSDBalanceOf(), refetchUserCrvUSDBalance(), refetchUserDebtTokenBalance()]);
+	}, [blockNumber, refetchCRVUSDBalanceOf, refetchUserCrvUSDBalance, refetchUserDebtTokenBalance]);
+
 	const handleBuyCrvUSD = useCallback(async () => {
 		if (!buyAmount) {
 			return;
 		}
 
-		if (chain?.id !== CHAIN_ID) {
-			await switchChainAsync({chainId: CHAIN_ID});
+		try {
+			if (chain?.id !== CHAIN_ID) {
+				await switchChainAsync({chainId: CHAIN_ID});
+			}
+
+			let errorMessage = '';
+			const txPromise = toast.promise(
+				(async () => {
+					try {
+						const tx = await writeContractAsync({
+							address: ADDRESSES[stablecoin].psm,
+							abi: PSM_ABI,
+							chainId: CHAIN_ID,
+							functionName: 'sellDebtToken',
+							args: [parseEther(buyAmount)]
+						});
+						return tx;
+					} catch (error) {
+						errorMessage = (error as unknown as {shortMessage: string}).shortMessage;
+						throw errorMessage;
+					}
+				})(),
+				{
+					loading: 'Buying crvUSD...',
+					success: `Successfully bought ${buyAmount} crvUSD`,
+					error: `Failed to buy crvUSD: ${errorMessage}`
+				}
+			);
+
+			await txPromise;
+			await Promise.all([refetchCRVUSDBalanceOf(), refetchUserCrvUSDBalance(), refetchUserDebtTokenBalance()]);
+		} catch (error) {
+			console.error(error);
 		}
-		await writeContractAsync({
-			address: ADDRESSES[stablecoin].psm,
-			abi: PSM_ABI,
-			chainId: CHAIN_ID,
-			functionName: 'sellDebtToken',
-			args: [parseEther(buyAmount)]
-		});
-	}, [buyAmount, chain?.id, stablecoin, switchChainAsync, writeContractAsync]);
+	}, [
+		buyAmount,
+		chain?.id,
+		refetchCRVUSDBalanceOf,
+		refetchUserCrvUSDBalance,
+		refetchUserDebtTokenBalance,
+		stablecoin,
+		switchChainAsync,
+		writeContractAsync
+	]);
 
 	return (
 		<Card className={'border-[#2D2D2D] bg-[#1A1A1A] p-6'}>

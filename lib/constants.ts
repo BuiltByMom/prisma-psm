@@ -5,23 +5,23 @@ export const CHAIN_ID = 69;
 export const ADDRESSES: {[key: string]: {troveHelper: Address; psm: Address}} = {
 	mkUSD: {
 		troveHelper: '0xc9C2D0bFb9860AD89a91D2069A8d73A6f903e9C4',
-		psm: '0x7ed601478ab6f077ac80bb6c035a32724a5a6c2b'
+		psm: '0x7BCC13095b177b63b253E1433999026DA629A1A4'
 	},
 	ULTRA: {
 		troveHelper: '0x4404ff820dad76afc4f931079eb13fd418c9ae7a',
-		psm: '0x70c064fcf358c0c1c34d9c8dd633784353f14e47'
+		psm: '0x821cF68F8B53192e02eC6bDeebfd711557A036D5'
 	}
 };
 
 export const PSM_ADDRESSES: {[key: string]: Address} = {
-	mkUSD: '0x7ed601478ab6f077ac80bb6c035a32724a5a6c2b',
-	ULTRA: '0x70c064fcf358c0c1c34d9c8dd633784353f14e47'
+	mkUSD: '0x7BCC13095b177b63b253E1433999026DA629A1A4',
+	ULTRA: '0x821cF68F8B53192e02eC6bDeebfd711557A036D5'
 };
 
 export const TOKENS: {[key: string]: Address} = {
 	mkUSD: '0x4591DBfF62656E7859Afe5e45f6f47D3669fBB28',
 	ULTRA: '0x35282d87011f87508D457F08252Bc5bFa52E10A0',
-	crvUSD: '0x95ECDC6caAf7E4805FCeF2679A92338351D24297'
+	crvUSD: '0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E'
 };
 
 export const BORROWER_OPS_ADDRESSES: {[key: string]: Address} = {

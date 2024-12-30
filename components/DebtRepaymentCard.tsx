@@ -2,8 +2,10 @@
 
 import {useCallback, useEffect, useState} from 'react';
 import Link from 'next/link';
+import {toast} from 'sonner';
 import {erc20Abi, formatEther, parseEther, zeroAddress} from 'viem';
-import {useAccount, useReadContract, useSwitchChain, useWriteContract} from 'wagmi';
+import {useAccount, useConfig, useReadContract, useSwitchChain, useWriteContract} from 'wagmi';
+import {waitForTransactionReceipt} from '@wagmi/core';
 
 import type {ReactNode} from 'react';
 import type {Address} from 'viem';
@@ -11,7 +13,7 @@ import type {Address} from 'viem';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
-import {ADDRESSES, BORROWER_OPS_ADDRESSES, CHAIN_ID} from '@/lib/constants';
+import {ADDRESSES, BORROWER_OPS_ADDRESSES, CHAIN_ID, TOKENS} from '@/lib/constants';
 import {formatNumber} from '@/lib/utils';
 
 const TROVE_HELPER_ABI = [
@@ -143,10 +145,13 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 	const {address} = useAccount();
 	const {writeContractAsync} = useWriteContract();
 	const {switchChainAsync, data: chain} = useSwitchChain();
+	const config = useConfig();
+
 	const [amount, set_amount] = useState('');
 	const [troveManagers, set_troveManagers] = useState<Address[]>([]);
 	const [selectedTrove, set_selectedTrove] = useState<Address | null>(null);
-	const [isApproved, set_isApproved] = useState(false);
+	const [isApprovedDelegate, set_isApprovedDelegate] = useState(false);
+	const [isApprovedCrvUSD, set_isApprovedCrvUSD] = useState(false);
 
 	// Get active trove managers
 	const {data: activeTroveManagers, isPending: isLoadingTroves} = useReadContract({
@@ -168,8 +173,22 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 		query: {enabled: !!BORROWER_OPS_ADDRESSES[stablecoin] && !!address}
 	});
 
+	// Check if crvUSD is approved delegate using borrowerOps from PSM
+	const {data: isCrvUSDApproved, refetch: refetchIsCrvUSDApproved} = useReadContract({
+		address: TOKENS['crvUSD'],
+		abi: erc20Abi,
+		chainId: CHAIN_ID,
+		functionName: 'allowance',
+		args: [address!, ADDRESSES[stablecoin].psm],
+		query: {enabled: !!address}
+	});
+
 	// Get trove debt
-	const {data: troveData, isLoading: isLoadingDebt} = useReadContract({
+	const {
+		data: troveData,
+		isLoading: isLoadingDebt,
+		refetch: refetchTroveData
+	} = useReadContract({
 		address: selectedTrove!,
 		abi: TROVE_MANAGER_ABI,
 		chainId: CHAIN_ID,
@@ -208,8 +227,16 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 	}, [activeTroveManagers]);
 
 	useEffect(() => {
-		set_isApproved(!!isDelegateApproved);
+		set_isApprovedDelegate(!!isDelegateApproved);
 	}, [isDelegateApproved]);
+
+	useEffect(() => {
+		if (!isCrvUSDApproved) {
+			set_isApprovedCrvUSD(false);
+			return;
+		}
+		set_isApprovedCrvUSD(parseEther(amount) <= isCrvUSDApproved);
+	}, [amount, isCrvUSDApproved]);
 
 	// Helper function to check if amount is approximately equal to debt (within buffer)
 	const isApproximatelyDebt = useCallback(
@@ -221,49 +248,148 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 	);
 
 	const handleAction = useCallback(async () => {
-		if (!isApproved) {
+		if (!isApprovedCrvUSD) {
+			try {
+				if (chain?.id !== CHAIN_ID) {
+					await switchChainAsync({chainId: CHAIN_ID});
+				}
+
+				const txPromise = toast.promise(
+					(async () => {
+						try {
+							const tx = await writeContractAsync({
+								address: TOKENS['crvUSD'],
+								abi: erc20Abi,
+								chainId: CHAIN_ID,
+								functionName: 'approve',
+								args: [ADDRESSES[stablecoin].psm, MAX_UINT256]
+							});
+
+							const receipt = await waitForTransactionReceipt(config, {hash: tx});
+							if (receipt.status === 'success') {
+								refetchIsCrvUSDApproved();
+							}
+							return receipt;
+						} catch (error) {
+							console.error(error);
+							const errorMessage = (error as unknown as {shortMessage: string}).shortMessage;
+							throw errorMessage;
+						}
+					})(),
+					{
+						loading: 'Approving crvUSD...',
+						success: 'crvUSD approved successfully',
+						error: errorMessage => `Failed to approve crvUSD: ${errorMessage}`
+					}
+				);
+
+				await txPromise;
+				refetchIsDelegateApproved();
+			} catch (error) {
+				console.error(error);
+			}
+		} else if (!isApprovedDelegate) {
 			if (!BORROWER_OPS_ADDRESSES[stablecoin]) {
 				return;
 			}
 
-			if (chain?.id !== CHAIN_ID) {
-				await switchChainAsync({chainId: CHAIN_ID});
-			}
+			try {
+				if (chain?.id !== CHAIN_ID) {
+					await switchChainAsync({chainId: CHAIN_ID});
+				}
 
-			await writeContractAsync({
-				address: BORROWER_OPS_ADDRESSES[stablecoin],
-				abi: BORROWER_OPS_ABI,
-				chainId: CHAIN_ID,
-				functionName: 'setDelegateApproval',
-				args: [ADDRESSES[stablecoin].psm, true]
-			});
-			refetchIsDelegateApproved();
+				const txPromise = toast.promise(
+					(async () => {
+						try {
+							const tx = await writeContractAsync({
+								address: BORROWER_OPS_ADDRESSES[stablecoin],
+								abi: BORROWER_OPS_ABI,
+								chainId: CHAIN_ID,
+								functionName: 'setDelegateApproval',
+								args: [ADDRESSES[stablecoin].psm, true]
+							});
+
+							const receipt = await waitForTransactionReceipt(config, {hash: tx});
+							if (receipt.status === 'success') {
+								refetchIsDelegateApproved();
+							}
+							console.warn(receipt);
+							return receipt;
+						} catch (error) {
+							console.error(error);
+							const errorMessage = (error as unknown as {shortMessage: string}).shortMessage;
+							throw errorMessage;
+						}
+					})(),
+					{
+						loading: 'Approving PSM...',
+						success: 'PSM approved successfully',
+						error: errorMessage => `Failed to approve PSM: ${errorMessage}`
+					}
+				);
+
+				await txPromise;
+				refetchIsDelegateApproved();
+			} catch (error) {
+				console.error(error);
+			}
 		} else {
 			if (!selectedTrove || !address || !amount) {
 				return;
 			}
 
-			if (chain?.id !== CHAIN_ID) {
-				await switchChainAsync({chainId: CHAIN_ID});
+			try {
+				if (chain?.id !== CHAIN_ID) {
+					await switchChainAsync({chainId: CHAIN_ID});
+				}
+
+				const repayAmount = isApproximatelyDebt(parseEther(amount)) ? MAX_UINT256 : parseEther(amount);
+				const txPromise = toast.promise(
+					(async () => {
+						try {
+							const tx = await writeContractAsync({
+								address: ADDRESSES[stablecoin].psm,
+								abi: PSM_ABI,
+								chainId: CHAIN_ID,
+								functionName: 'repayDebt',
+								args: [selectedTrove, address, repayAmount, zeroAddress, zeroAddress]
+							});
+
+							const receipt = await waitForTransactionReceipt(config, {hash: tx});
+							if (receipt.status === 'success') {
+								refetchIsDelegateApproved();
+							}
+							return receipt;
+						} catch (error) {
+							console.error(error);
+							const errorMessage = (error as unknown as {shortMessage: string}).shortMessage;
+							throw errorMessage;
+						}
+					})(),
+					{
+						loading: 'Repaying debt...',
+						success: `Successfully repaid ${amount} ${stablecoin}`,
+						error: errorMessage => `Failed to repay debt: ${errorMessage}`
+					}
+				);
+
+				await txPromise;
+				await Promise.all([refetchTroveData()]);
+			} catch (error) {
+				console.error(error);
 			}
-
-			const repayAmount = isApproximatelyDebt(parseEther(amount)) ? MAX_UINT256 : parseEther(amount);
-
-			await writeContractAsync({
-				address: ADDRESSES[stablecoin].psm,
-				abi: PSM_ABI,
-				chainId: CHAIN_ID,
-				functionName: 'repayDebt',
-				args: [selectedTrove, address, repayAmount, zeroAddress, zeroAddress]
-			});
 		}
 	}, [
 		address,
 		amount,
 		chain?.id,
-		isApproved,
+		config,
+		isApprovedCrvUSD,
+		isApprovedDelegate,
 		isApproximatelyDebt,
+		refetchIsCrvUSDApproved,
 		refetchIsDelegateApproved,
+		refetchTroveData,
 		selectedTrove,
 		stablecoin,
 		switchChainAsync,
@@ -408,13 +534,15 @@ export default function DebtRepaymentCard({stablecoin}: TDebtRepaymentCardProps)
 						onClick={handleAction}
 						disabled={
 							isLoadingDebt ||
-							(!isApproved
+							(!isApprovedCrvUSD
 								? debt === BigInt(0)
-								: !amount ||
-									(parseEther(amount) > debt && !isApproximatelyDebt(parseEther(amount))) ||
-									debt === BigInt(0))
+								: !isApprovedDelegate
+									? debt === BigInt(0)
+									: !amount ||
+										(parseEther(amount) > debt && !isApproximatelyDebt(parseEther(amount))) ||
+										debt === BigInt(0))
 						}>
-						{isApproved ? 'Repay Debt' : 'Approve PSM'}
+						{!isApprovedCrvUSD ? 'Approve crvUSD' : !isApprovedDelegate ? 'Approve PSM' : 'Repay Debt'}
 					</Button>
 				</div>
 			</div>

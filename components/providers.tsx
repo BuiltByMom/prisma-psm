@@ -18,10 +18,10 @@ const tenderlyFork = {
 	network: 'tenderly',
 	rpcUrls: {
 		default: {
-			http: ['https://virtual.mainnet.rpc.tenderly.co/f89f98d6-2c80-4dc7-b643-5fd9e0259006']
+			http: ['https://virtual.mainnet.rpc.tenderly.co/45c7f6d2-8d17-466f-a7d6-23cfc1ed0da9']
 		},
 		public: {
-			http: ['https://virtual.mainnet.rpc.tenderly.co/f89f98d6-2c80-4dc7-b643-5fd9e0259006']
+			http: ['https://virtual.mainnet.rpc.tenderly.co/45c7f6d2-8d17-466f-a7d6-23cfc1ed0da9']
 		}
 	}
 };
