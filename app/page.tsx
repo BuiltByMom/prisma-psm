@@ -64,8 +64,8 @@ export default function Home(): ReactNode {
 						<Image
 							src={'/prisma-logo.svg'}
 							alt={'Prisma PSM'}
-							width={32}
-							height={32}
+							width={48}
+							height={48}
 							className={'mr-2'}
 						/>
 						<span className={'text-lg font-semibold text-white'}>{'Prisma PSM'}</span>
