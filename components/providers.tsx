@@ -11,31 +11,16 @@ import {http} from '@wagmi/core';
 
 import type {Chain} from 'wagmi/chains';
 
-const tenderlyFork = {
-	...mainnet,
-	id: 69,
-	name: 'Tenderly Fork',
-	network: 'tenderly',
-	rpcUrls: {
-		default: {
-			http: ['https://virtual.mainnet.rpc.tenderly.co/45c7f6d2-8d17-466f-a7d6-23cfc1ed0da9']
-		},
-		public: {
-			http: ['https://virtual.mainnet.rpc.tenderly.co/45c7f6d2-8d17-466f-a7d6-23cfc1ed0da9']
-		}
-	}
-};
-
 // 1. Get projectId from https://cloud.reown.com
 export const projectId = process.env.NEXT_PUBLIC_REOWN_PROJECT_ID!;
 
 // 2. Networks networks
-export const defaultNetwork = tenderlyFork;
-export const networks: [Chain, ...Chain[]] = [tenderlyFork];
+export const defaultNetwork = mainnet;
+export const networks: [Chain, ...Chain[]] = [mainnet];
 
 // 3. Transports
 const transports = {
-	[tenderlyFork.id]: http()
+	[mainnet.id]: http()
 };
 
 const storage = createStorage({storage: cookieStorage});

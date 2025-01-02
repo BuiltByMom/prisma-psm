@@ -1,21 +1,23 @@
+import {mainnet} from 'viem/chains';
+
 import type {Address} from 'viem';
 
-export const CHAIN_ID = 69;
+export const CHAIN_ID = mainnet.id;
 
 export const ADDRESSES: {[key: string]: {troveHelper: Address; psm: Address}} = {
 	mkUSD: {
 		troveHelper: '0xc9C2D0bFb9860AD89a91D2069A8d73A6f903e9C4',
-		psm: '0x7BCC13095b177b63b253E1433999026DA629A1A4'
+		psm: '0x9d7634b2B99c2684611c0Ac3150bAF6AEEa4Ed77'
 	},
 	ULTRA: {
 		troveHelper: '0x4404ff820dad76afc4f931079eb13fd418c9ae7a',
-		psm: '0x821cF68F8B53192e02eC6bDeebfd711557A036D5'
+		psm: '0xAe21Fe5B61998b143f721CE343aa650a6d5EadCe'
 	}
 };
 
 export const PSM_ADDRESSES: {[key: string]: Address} = {
-	mkUSD: '0x7BCC13095b177b63b253E1433999026DA629A1A4',
-	ULTRA: '0x821cF68F8B53192e02eC6bDeebfd711557A036D5'
+	mkUSD: '0x9d7634b2B99c2684611c0Ac3150bAF6AEEa4Ed77',
+	ULTRA: '0xAe21Fe5B61998b143f721CE343aa650a6d5EadCe'
 };
 
 export const TOKENS: {[key: string]: Address} = {
